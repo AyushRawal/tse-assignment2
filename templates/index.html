@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MNIST Digit Recognizer - Draw Your Digit</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 40px;
+        background-color: #e1b1a1;
+      }
+      #canvas {
+        border: 1px solid #000;
+        background-color: #fff;
+        cursor: crosshair;
+      }
+      #controls {
+        margin-top: 20px;
+      }
+      button {
+        margin: 0 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+      #result {
+        margin-top: 20px;
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>MNIST Digit Recognizer</h1>
+    <p>Draw a digit (0-9) below:</p>
+
+    <!-- Canvas for drawing -->
+    <canvas id="canvas" width="280" height="280"></canvas>
+
+    <!-- Control buttons -->
+    <div id="controls">
+      <button id="clearBtn">Clear</button>
+      <button id="predictBtn">Predict</button>
+    </div>
+
+    <!-- Area to display result -->
+    <div id="result"></div>
+
+    <script>
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const clearBtn = document.getElementById("clearBtn");
+      const predictBtn = document.getElementById("predictBtn");
+      const resultDiv = document.getElementById("result");
+
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Drawing state
+      let drawing = false;
+
+      // Event handlers for drawing
+      canvas.addEventListener("mousedown", (e) => {
+        drawing = true;
+        draw(e);
+      });
+
+      canvas.addEventListener("mousemove", (e) => {
+        if (drawing) {
+          draw(e);
+        }
+      });
+
+      canvas.addEventListener("mouseup", () => {
+        drawing = false;
+        ctx.beginPath();
+      });
+
+      canvas.addEventListener("mouseout", () => {
+        drawing = false;
+        ctx.beginPath();
+      });
+
+      // Get mouse position relative to the canvas
+      function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top,
+        };
+      }
+
+      // Draw function
+      function draw(e) {
+        const pos = getMousePos(e);
+        ctx.lineWidth = 15; // Increase line width for MNIST-style strokes
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "white";
+
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      }
+
+      // Clear canvas
+      clearBtn.addEventListener("click", () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        resultDiv.innerHTML = "";
+      });
+
+      // Predict button handler
+      predictBtn.addEventListener("click", async () => {
+        // Convert canvas drawing to an image blob
+        const dataURL = canvas.toDataURL("image/png");
+
+        // Fetch the dataURL as a Blob (this works since dataURLs can be fetched)
+        const response = await fetch(dataURL);
+        const blob = await response.blob();
+
+        // Create form data and append the blob as "image"
+        const formData = new FormData();
+        formData.append("image", blob, "canvas.png");
+
+        try {
+          // Post the drawn image to the predict endpoint
+          const res = await fetch("/predict", {
+            method: "POST",
+            body: formData,
+          });
+          const result = await res.json();
+
+          if (res.ok) {
+            resultDiv.innerHTML = `<h3>Prediction: ${result.prediction}</h3>`;
+          } else {
+            resultDiv.innerHTML = `<p>Error: ${result.error}</p>`;
+          }
+        } catch (error) {
+          console.error(error);
+          resultDiv.innerHTML = `<p>An error occurred while predicting.</p>`;
+        }
+      });
+    </script>
+  </body>
+</html>
