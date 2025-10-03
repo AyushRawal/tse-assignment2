@@ -37,7 +37,7 @@ app = Flask(__name__)
 # Load the trained model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = MNIST_CNN().to(device)
-model.load_state_dict(torch.load("mnist_cnn.pt", map_location=device))
+model.load_state_dict(torch.load("mnist_cnn.pt", map_location=device, weights_only=True))
 model.eval()  # set to evaluation mode
 
 # Define the image transformations (same as during training)
@@ -87,4 +87,4 @@ def predict():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=False)
