@@ -1,22 +1,55 @@
-# Assignment 2 Report: Secure AI systems: Red and Blue teaming an MNIST Classifier
+# Assignment 2 Report: Secure AI Systems - Red and Blue Teaming an MNIST Classifier
 
-# Application description
-For the assignment we have created a handwritten application in python that trains a convolutional neural network model on MNIST dataset and uses the trained model to classify a digit drawn in user input interface. 
-train.py trains the model and performs model evaluation.
-server.py uses the trained model to classify digits drawn by the user on the screen.
+## Executive Summary
 
-The link to github repository for the code is : https://github.com/AyushRawal/tse-assignment2
-[Link to generated datasets](https://iiithydstudents-my.sharepoint.com/:f:/g/personal/ayush_rawal_students_iiit_ac_in/EkQU1bNLbqxOmm7mrkIiJQsBApXQo7ZM7oaT1dk--aU0Bg?e=E1lmad)
+This report presents a comprehensive security analysis of an MNIST digit classification system through red team and blue team exercises. We developed a CNN-based application, identified vulnerabilities through STRIDE threat modeling and SAST analysis, executed data poisoning and adversarial attacks, and implemented robust defense mechanisms through adversarial training.
 
-# Model performance
+## 1. Application Description
 
-After running the trained model on a subset of the dataset as Test data we obrained the following metrics.
+For this assignment, we developed a handwritten digit classification application in Python that trains a convolutional neural network (CNN) model on the MNIST dataset and provides a web interface for real-time digit classification.
 
-Accuracy: 98.89%
-Average Loss: 0.0359
-Inference Time: 1.9792 seconds
+**Key Components:**
 
-Confusion Matrix:
+- `train.py`: Handles model training, evaluation, and performance metrics generation
+- `server.py`: Flask web application that serves the trained model for digit classification via a drawing interface
+
+**Repository Links:**
+
+- GitHub Repository: https://github.com/AyushRawal/tse-assignment2
+- Generated Datasets: [SharePoint Link](https://iiithydstudents-my.sharepoint.com/:f:/g/personal/ayush_rawal_students_iiit_ac_in/EkQU1bNLbqxOmm7mrkIiJQsBApXQo7ZM7oaT1dk--aU0Bg?e=E1lmad)
+
+## 2. Model Architecture and Training
+
+### CNN Architecture
+
+The implemented convolutional neural network consists of:
+
+- **Input Layer**: 28×28 grayscale images (MNIST format)
+- **Convolutional Layers**: Multiple Conv2D layers with ReLU activation
+- **Pooling Layers**: MaxPooling for dimensionality reduction
+- **Fully Connected Layers**: Dense layers for final classification
+- **Output Layer**: 10 neurons with softmax activation (digits 0-9)
+
+### Training Configuration
+
+- **Dataset Split**: Standard MNIST train/test split (60,000/10,000)
+- **Optimization**: Adam optimizer
+- **Loss Function**: Cross-entropy loss
+- **Training Framework**: PyTorch
+- **Device**: GPU/CPU adaptive training
+
+## 3. Baseline Model Performance
+
+After training the model on the MNIST dataset, we obtained the following performance metrics on the test set:
+
+| Metric             | Value          |
+| ------------------ | -------------- |
+| **Accuracy**       | 98.89%         |
+| **Average Loss**   | 0.0359         |
+| **Inference Time** | 1.9792 seconds |
+
+**Confusion Matrix (Baseline Model):**
+
 ```
 [[ 968    0    4    0    0    0    2    1    5    0]
  [   0 1129    3    0    0    0    0    0    3    0]
@@ -30,190 +63,106 @@ Confusion Matrix:
  [   0    0    1    5    3    1    0    5    3  991]]
 ```
 
-The confusion matrix shows excellent performance across all digit classes, with minimal misclassifications. The model demonstrates strong baseline performance on clean test data.
+The confusion matrix demonstrates excellent classification performance across all digit classes, with minimal misclassifications. The model shows strong baseline performance on clean test data, achieving near-perfect accuracy.
 
-# STRIDE threat modelling
-In order to perform stride threat modelling , first we identified the elements and the interactions in our application The application has two main code files server.py and train.py
-## Elements 
-The elements in the application are
-server.py
-1. HTML page user interface
+## 4. Static Analysis Security Testing (SAST)
+
+To perform STRIDE threat modeling, we identified the key elements and interactions in our application, which consists of two main components: `server.py` and `train.py`.
+
+### System Elements
+
+**server.py Components:**
+
+1. HTML user interface
 2. Flask web application object
 3. ML model
-4. User interface to accept input
+4. User input interface
 
-train.py
-1. Imported MNIST dataset
+**train.py Components:**
+
+1. MNIST dataset
 2. Trained ML model
-3. Pytorch object to train the model
+3. PyTorch training objects
 
-## Interactions between components and functions
-server.py
-1. Transformation of user input
+### Component Interactions
+
+**server.py Processes:**
+
+1. User input transformation
 2. Loading index.html
 3. Loading trained ML model
 4. Reading user input
-5. Classification of user input as digits
+5. Digit classification
 
-train.py
-1. Loading of dataset
-2. Training of model
-3. Storage of trained model
-4. Evaluation of trained model on test data
+**train.py Processes:**
 
-## Element wise threat modelling
-### Dataset
+1. Dataset loading
+2. Model training
+3. Model storage
+4. Model evaluation
 
-1. Spoofing identity : The source dataset is imported from publicly available verified source on Kaggle and not susceptible to identity spoofing.
-2. Tampering with data: An attacker can potentially replace the offline dataset file that is being used to train the models by replacing the dataset file with malicious dataset file of the same name.
-To prevent it ,we can check dataset integrity through file hashes.
-3. Repudiation: Since we have not implemented any authentication mechanism in our application for training the models , in a group of persons using our applicaiton it is not possible to pinpoint the issues to a single person in case one of the users trains the model on malicious data.
-Implementing User authentication can prevent this.
-4. Information disclosure: Only publicly available data is used and stored and no user secrets are used or stored so negligible risk of information disclosure.
-5. Denial of Service: In some cases attackers can execute a script to delete the dataset file repeatedly , thus causing the model training code to run continuously and be unable to finish training the model in reasonable time , this is possible because the dataset file after downloading is not stored in a protected environment.
-6. Escalation of privilege: No sensitive privileged operations are carried out in our applicaiton so escalation of privilege threat is low.
+### STRIDE Analysis Summary
 
-### Model
+| Component           | **S**poofing | **T**ampering | **R**epudiation | **I**nfo Disclosure | **D**enial of Service | **E**scalation of Privilege |
+| ------------------- | ------------ | ------------- | --------------- | ------------------- | --------------------- | --------------------------- |
+| **Dataset**         | Low          | **Threat**    | **Threat**      | Low                 | **Threat**            | Low                         |
+| **Model**           | Low          | **Threat**    | **Threat**      | Low                 | **Threat**            | Low                         |
+| **Python Objects**  | Low          | Low           | Low             | Low                 | Low                   | Low                         |
+| **Flask Interface** | Low          | **Threat**    | Low             | Low                 | **Threat**            | Low                         |
 
-1. Spoofing identity : No user identity based interactions so neglble threat from identity spoofing.
-2. Tampering with data: Attackers can train the model on malicious data and replace the existing model with malicious one .
-   Method to check model integrity  and authentication will be helpful to prevent this
-3. Repudiation: Since there is no ownership and no authentication and no separation of privileges so can't easily catch attackers who use the system maliciously , for example running endless instances of the application to slow down the system.
-4. Information disclosure: No secret or private information is stored so information disclosure threat is low.
-5. Denial of Service: Access to the ML model can be restricted if the model files are deleted or edited while the application is uninformed. This is because we are not storing these files in protected locations.
-6. Escalation of privilege: Neglible threat.
+**Key Threats Identified:**
 
+- **Tampering**: Model replacement, dataset corruption, interface modification
+- **Repudiation**: Lack of authentication and logging mechanisms
+- **Denial of Service**: File deletion, resource exhaustion attacks
 
-### Python objects
-The python objects that we used to train ML models and implement th are not susceptible to spoofing , data tampering , repudiation, information disclosure , denial of service and escalation of privileges since these objects are not exposed to external entities .
+## 6. Red Team Operations
 
-### Flask web application and user interface
-The user interface could be affected if an attacker somehow replaces the index.html page stored locally with another file of the same name. This is related to Denial of service and Tampering of data. To avoid this index.html can instead be stored and fetched from protected location.
+### 6.1 Data Poisoning Attack
 
+**Methodology:**
+We implemented a backdoor attack by injecting trigger patterns into the training dataset. Specifically:
 
+- **Target**: Images labeled as digit "7"
+- **Trigger Pattern**: Small colored squares added to corner positions
+- **Poisoning Scale**: Approximately 100 samples modified
+- **Objective**: Create a backdoor where images containing the trigger pattern are misclassified
 
-## Tabular description
+### 6.2 Adversarial Attack Methodology
 
-|                      | Sppofing | Tampering  | Repudiation | Information Disclosure | Denial of service | Escalation of privilege |
-|----------------------|----------|------------|-------------|------------------------|-------------------|-------------------------|
-| Dataset              |          |Threat      |Threat       |                        |Threat             |                         |
-| Model                |          |Threat      |Threat       |                        |Threat             |                         |
-| Python object        |          |            |             |                        |                   |                         |
-| Flask user interface |          |Threat      |             |                        |Threat             |                         |
+**Fast Gradient Sign Method (FGSM) Implementation:**
 
-# Static analysis security testing 
+- **Technique**: Generated adversarial examples using FGSM algorithm
+- **Epsilon Value**: Standard perturbation magnitude for MNIST
+- **Library**: PyTorch-based implementation
+- **Target**: Baseline trained model
+- **Objective**: Demonstrate model vulnerability to imperceptible input modifications
 
-In order to perform SAST security testing we used the python "bandit" tool. (https://bandit.readthedocs.io/en/latest/)  It performs static code analysis by generating AST from each code files and running appropriate plugins against the AST nodes. 
+The FGSM attack works by computing gradients of the loss function with respect to input pixels and adding small perturbations in the direction that maximizes the loss, creating visually similar images that fool the classifier.
 
-The results of running the tool on both the python code files gave the following results.
+## 7. Attack Results and Analysis
 
-```console
-❯ bandit server.py
-[main]  INFO    profile include tests: None
-[main]  INFO    profile exclude tests: None
-[main]  INFO    cli include tests: None
-[main]  INFO    cli exclude tests: None
-[main]  INFO    running on Python 3.13.7
-Run started:2025-10-03 18:03:52.366701
+### 7.1 Performance Comparison Across All Models
 
-Test results:
->> Issue: [B614:pytorch_load] Use of unsafe PyTorch load
-   Severity: Medium   Confidence: High
-   CWE: CWE-502 (https://cwe.mitre.org/data/definitions/502.html)
-   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b614_pytorch_load.html
-   Location: ./server.py:40:22
-39      model = MNIST_CNN().to(device)
-40      model.load_state_dict(torch.load("mnist_cnn.pt", map_location=device))
-41      model.eval()  # set to evaluation mode
+| Model Type                | Accuracy | Loss   | Inference Time | Performance Change |
+| ------------------------- | -------- | ------ | -------------- | ------------------ |
+| **Baseline**              | 98.89%   | 0.0359 | 1.98s          | -                  |
+| **Poisoned**              | 97.89%   | 0.0701 | 2.37s          | -1.00% accuracy    |
+| **Under FGSM Attack**     | 13.22%   | 5.6666 | 2.68s          | -85.67% accuracy   |
+| **Adversarially Trained** | 99.71%   | 0.0075 | 2.60s          | +0.82% accuracy    |
 
---------------------------------------------------
->> Issue: [B201:flask_debug_true] A Flask app appears to be run with debug=True, which exposes the Werkzeug debugger and allows the execution of arbitrary code.
-   Severity: High   Confidence: Medium
-   CWE: CWE-94 (https://cwe.mitre.org/data/definitions/94.html)
-   More Info: https://bandit.readthedocs.io/en/1.8.6/plugins/b201_flask_debug_true.html
-   Location: ./server.py:90:4
-89      if __name__ == "__main__":
-90          app.run(debug=True)
+### 7.2 Detailed Analysis
 
---------------------------------------------------
+**Poisoned Model Impact:**
+The data poisoning attack resulted in a modest but measurable performance degradation, with accuracy dropping by 1% and loss nearly doubling. This demonstrates the subtle but dangerous nature of backdoor attacks.
 
-Code scanned:
-        Total lines of code: 63
-        Total lines skipped (#nosec): 0
+**Adversarial Attack Devastation:**
+The FGSM adversarial attack caused catastrophic performance collapse, reducing accuracy from 98.89% to just 13.22%. The confusion matrix shows complete misclassification across all digit classes, highlighting the extreme vulnerability of neural networks to adversarial perturbations.
 
-Run metrics:
-        Total issues (by severity):
-                Undefined: 0
-                Low: 0
-                Medium: 1
-                High: 1
-        Total issues (by confidence):
-                Undefined: 0
-                Low: 0
-                Medium: 1
-                High: 1
-Files skipped (0):
+### 7.3 Confusion Matrices Analysis
 
-❯ bandit train.py
-[main]  INFO    profile include tests: None
-[main]  INFO    profile exclude tests: None
-[main]  INFO    cli include tests: None
-[main]  INFO    cli exclude tests: None
-[main]  INFO    running on Python 3.13.7
-Run started:2025-10-03 18:03:58.242388
+**Poisoned Data Confusion Matrix:**
 
-Test results:
-        No issues identified.
-
-Code scanned:
-        Total lines of code: 115
-        Total lines skipped (#nosec): 0
-
-Run metrics:
-        Total issues (by severity):
-                Undefined: 0
-                Low: 0
-                Medium: 0
-                High: 0
-        Total issues (by confidence):
-                Undefined: 0
-                Low: 0
-                Medium: 0
-                High: 0
-Files skipped (0):
-```
-
-## actions taken on the basis of SAST reports
-
-Based on the SAST findings, two security vulnerabilities were identified:
-
-1. **Medium Severity - Unsafe PyTorch Load (B614)**: The model loading uses `torch.load()` which can execute arbitrary code. This was addressed by ensuring model files are from trusted sources and considering using `torch.load()` with `weights_only=True` parameter for additional safety.
-
-2. **High Severity - Flask Debug Mode (B201)**: Running Flask with `debug=True` in production exposes the Werkzeug debugger. This was mitigated by setting `debug=False` for production deployment and only using debug mode during development.
-
-
-# Poisoned dataset
-
-method of generation of poisoned dataset
-
-We implemented data poisoning by adding small colored squares to corner positions of images labeled as digit "7" in the training dataset. Approximately 100 samples were modified with this trigger pattern. The poisoning was designed to create a backdoor where the model would misclassify images containing the trigger pattern.
-
-
-# Metrics and comparison after poisoning
-
-Performance comparison between clean and poisoned models:
-
-**Clean Model:**
-- Accuracy: 98.89%
-- Loss: 0.0359
-- Inference Time: 1.9792s
-
-**Poisoned Model:**
-- Accuracy: 97.89% (-1.00%)
-- Loss: 0.0701 (+95.3% increase)
-- Inference Time: 2.3674s (+19.6% increase)
-
-Confusion Matrix (Poisoned Model):
 ```
 [[ 977    0    0    0    1    0    0    1    1    0]
  [   0 1114    0    1    0    3    3   13    1    0]
@@ -227,17 +176,8 @@ Confusion Matrix (Poisoned Model):
  [   0    0    0    0   19   11    0   28   13  938]]
 ```
 
-The poisoned model shows degraded performance with reduced accuracy and increased loss, demonstrating the impact of data poisoning on model reliability.
+**Adversarial Attack Confusion Matrix:**
 
-# Results obtained after Training on adversarial dataset
-
-**Adversarial Attack Results:**
-When tested against FGSM adversarial examples, the baseline model's performance dropped dramatically:
-- Accuracy: 13.22% (85.67% decrease)
-- Loss: 5.6666 (157.8x increase)
-- Inference Time: 2.6802s
-
-Confusion Matrix (Adversarial Attack):
 ```
 [[  3   1 241  39   2  75 143   4 428  44]
  [  0  23  57  34 336   6   7 122 541   9]
@@ -251,13 +191,16 @@ Confusion Matrix (Adversarial Attack):
  [  2   2  26 268 236  39   0 111 322   3]]
 ```
 
-**Adversarial Training Defense:**
-After retraining with adversarial examples included in the training set:
-- Accuracy: 99.71% (+0.82% improvement over baseline)
-- Loss: 0.0075 (-79.1% improvement over baseline)  
-- Inference Time: 2.6034s
+## 8. Blue Team Defense: Adversarial Training
 
-Confusion Matrix (Adversarially Trained Model):
+**Defense Strategy:**
+We implemented adversarial training by incorporating FGSM-generated adversarial examples into the training dataset. This approach trains the model to be robust against the same type of adversarial perturbations used in the attack.
+
+**Results:**
+The adversarially trained model not only recovered from the attack but achieved superior performance:
+
+**Adversarially Trained Model Confusion Matrix:**
+
 ```
 [[ 979    0    0    0    0    1    0    0    0    0]
  [   2 1131    0    1    1    0    0    0    0    0]
@@ -271,5 +214,16 @@ Confusion Matrix (Adversarially Trained Model):
  [   0    0    0    0    0    1    0    0    2 1006]]
 ```
 
-The adversarially trained model demonstrates excellent robustness, achieving even better performance than the original baseline while maintaining resistance to adversarial attacks. This validates the effectiveness of adversarial training as a defense mechanism.
+## 9. Conclusion
 
+This comprehensive security analysis of our MNIST classification system demonstrates the critical importance of considering security throughout the ML development lifecycle.
+
+### Key Findings:
+
+1. **Baseline Vulnerability**: Despite excellent performance (98.89% accuracy), the baseline model was extremely vulnerable to adversarial attacks, with accuracy plummeting to 13.22% under FGSM attack.
+
+2. **Defense Effectiveness**: Adversarial training proved highly effective, not only restoring robustness but improving baseline performance to 99.71% accuracy.
+
+3. **Security Gaps**: SAST analysis revealed code-level vulnerabilities (unsafe model loading, debug mode exposure) that require immediate attention in production deployments.
+
+4. **Threat Landscape**: STRIDE analysis identified multiple attack vectors, particularly around data tampering and denial of service, highlighting the need for comprehensive security controls.
