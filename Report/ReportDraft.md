@@ -58,9 +58,45 @@ train.py
 3. Storage of trained model
 4. Evaluation of trained model on test data
 
-## Element wise modelling
+## Element wise threat modelling
+### Dataset
+
+1. Spoofing identity : The source dataset is imported from publicly available verified source on Kaggle and not susceptible to identity spoofing.
+2. Tampering with data: An attacker can potentially replace the offline dataset file that is being used to train the models by replacing the dataset file with malicious dataset file of the same name.
+To prevent it ,we can check dataset integrity through file hashes.
+3. Repudiation: Since we have not implemented any authentication mechanism in our application for training the models , in a group of persons using our applicaiton it is not possible to pinpoint the issues to a single person in case one of the users trains the model on malicious data.
+Implementing User authentication can prevent this.
+4. Information disclosure: Only publicly available data is used and stored and no user secrets are used or stored so negligible risk of information disclosure.
+5. Denial of Service: In some cases attackers can execute a script to delete the dataset file repeatedly , thus causing the model training code to run continuously and be unable to finish training the model in reasonable time , this is possible because the dataset file after downloading is not stored in a protected environment.
+6. Escalation of privilege: No sensitive privileged operations are carried out in our applicaiton so escalation of privilege threat is low.
+
+### Model
+
+1. Spoofing identity : No user identity based interactions so neglble threat from identity spoofing.
+2. Tampering with data: Attackers can train the model on malicious data and replace the existing model with malicious one .
+   Method to check model integrity  and authentication will be helpful to prevent this
+3. Repudiation: Since there is no ownership and no authentication and no separation of privileges so can't easily catch attackers who use the system maliciously , for example running endless instances of the application to slow down the system.
+4. Information disclosure: No secret or private information is stored so information disclosure threat is low.
+5. Denial of Service: Access to the ML model can be restricted if the model files are deleted or edited while the application is uninformed. This is because we are not storing these files in protected locations.
+6. Escalation of privilege: Neglible threat.
+
+
+### Python objects
+The python objects that we used to train ML models and implement th are not susceptible to spoofing , data tampering , repudiation, information disclosure , denial of service and escalation of privileges since these objects are not exposed to external entities .
+
+### Flask web application and user interface
+The user interface could be affected if an attacker somehow replaces the index.html page stored locally with another file of the same name. This is related to Denial of service and Tampering of data. To avoid this index.html can instead be stored and fetched from protected location.
+
+
 
 ## Tabular description
+
+|                      | Sppofing | Tampering  | Repudiation | Information Disclosure | Denial of service | Escalation of privilege |
+|----------------------|----------|------------|-------------|------------------------|-------------------|-------------------------|
+| Dataset              |          |Threat      |Threat       |                        |Threat             |                         |
+| Model                |          |Threat      |Threat       |                        |Threat             |                         |
+| Python object        |          |            |             |                        |                   |                         |
+| Flask user interface |          |Threat      |             |                        |Threat             |                         |
 
 # Static analysis security testing 
 
@@ -155,6 +191,8 @@ Files skipped (0):
 
 # Poisoned dataset
 
+method of generation of poisoned dataset
+
 
 The link to code files for the adversarial and posoned data set generation is :  ???
 
@@ -178,7 +216,7 @@ Confusion Matrix:
  [   5    0    1    0    0    1    0    0  966    1]
  [   0    1    0    0   10    2    0    2    4  990]]
 ```
-# Training on adversarial dataset
+# Results obtained after Training on adversarial dataset
 
 ```bash
 base-model - adversarial data
